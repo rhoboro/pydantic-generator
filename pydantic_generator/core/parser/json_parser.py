@@ -1,12 +1,12 @@
 import ast
 import json
 from ast import *
-from datetime import datetime
 from typing import IO, Iterable, Tuple, Union
 
 from .base import Parser
 
-JsonValue = Union[dict, list, int, str, datetime]
+# Supported types in https://docs.python.org/ja/3/library/json.html#json.JSONEncoder
+JsonValue = Union[dict, list, int, float, str, bool, None]
 
 
 class JsonParser(Parser):
@@ -15,8 +15,6 @@ class JsonParser(Parser):
         self.body = json.load(reader)
 
     def parse(self) -> Iterable[ast.ClassDef]:
-        # feature: 入れ子をフラットにするモード
-        # feature: 同じ内容のクラスをまとめるモード
         return list(class_parse(self.name, self.body))
 
 
@@ -75,14 +73,14 @@ def class_parse(key: str, json_value: JsonValue) -> Iterable[ast.ClassDef]:
                         simple=1,
                     )
 
-                elif isinstance(value, (int, str)):
+                elif isinstance(value, (bool, int, float, str)):
                     yield AnnAssign(
                         target=Name(id=key, ctx=Store()),
                         annotation=nested_element(key, value.__class__.__name__, nest),
                         simple=1,
                     )
 
-            elif isinstance(json_value[0], (int, str)):
+            elif isinstance(json_value[0], (bool, int, float, str)):
                 yield AnnAssign(
                     target=Name(id=key, ctx=Store()),
                     annotation=Subscript(
@@ -97,7 +95,7 @@ def class_parse(key: str, json_value: JsonValue) -> Iterable[ast.ClassDef]:
                 target=Name(id=key, ctx=Store()), annotation=Name(id="list", ctx=Load()), simple=1
             )
 
-    elif isinstance(json_value, (int, str)):
+    elif isinstance(json_value, (bool, int, float, str)):
         yield AnnAssign(
             target=Name(id=key, ctx=Store()),
             annotation=Name(id=json_value.__class__.__name__, ctx=Load()),
