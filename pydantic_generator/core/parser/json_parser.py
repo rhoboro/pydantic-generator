@@ -2,7 +2,7 @@ import ast
 import json
 from ast import *
 from datetime import datetime
-from typing import IO, Iterable, Union
+from typing import IO, Iterable, Tuple, Union
 
 from .base import Parser
 
@@ -15,62 +15,116 @@ class JsonParser(Parser):
         self.body = json.load(reader)
 
     def parse(self) -> Iterable[ast.ClassDef]:
+        # feature: 入れ子をフラットにするモード
+        # feature: 同じ内容のクラスをまとめるモード
         return list(class_parse(self.name, self.body))
 
 
-def class_parse(key: str, json_value: dict) -> Iterable[ast.ClassDef]:
-    return []
-    print(key, json_value)
-    for k, v in json_value.items():
-        if isinstance(v, dict):
-            yield ast.ClassDef(
-                name=key,
-                bases=[Name(id="BaseModel", ctx=Load())],
-                keywords=[],
-                body=list(class_parse(k, v)),
-                decorator_list=[],
-            )
-        elif isinstance(v, list):
-            if v:
-                if isinstance(v[0], dict):
-                    yield from class_parse(k, v[0])
-                elif isinstance(v[0], (int, str)):
-                    yield AnnAssign(
-                        target=Name(id=k, ctx=Store()),
-                        annotation=Subscript(
-                            value=Attribute(
-                                value=Name(id="List", ctx=Load()),
-                                # value=Name(id="typing", ctx=Load()), attr="List", ctx=Load()
-                            ),
-                            slice=Name(id=v[0].__class__.__name__, ctx=Load()),
-                            ctx=Load(),
-                        ),
-                        simple=1,
-                    )
-            else:
-                yield ClassDef(
-                    name=key,
+def class_parse(key: str, json_value: JsonValue) -> Iterable[ast.ClassDef]:
+    if isinstance(json_value, dict):
+        yield ast.ClassDef(
+            name=key.capitalize(),
+            bases=[Name(id="BaseModel", ctx=Load())],
+            keywords=[],
+            body=list(list(class_parse(k, v)) for k, v in json_value.items()),
+            decorator_list=[],
+        )
+        yield AnnAssign(
+            target=Name(id=key, ctx=Store()),
+            annotation=Name(id=key.capitalize(), ctx=Load()),
+            simple=1,
+        )
+    elif isinstance(json_value, list):
+        if json_value:
+            if isinstance(json_value[0], dict):
+                yield ast.ClassDef(
+                    name=key.capitalize(),
                     bases=[Name(id="BaseModel", ctx=Load())],
                     keywords=[],
-                    body=[
-                        AnnAssign(
-                            target=Name(id=k, ctx=Store()),
-                            annotation=Subscript(
-                                value=Attribute(
-                                    # value=Name(id="typing", ctx=Load()), attr="List", ctx=Load()
-                                    value=Name(id="List", ctx=Load()),
-                                ),
-                                slice=Name(id="int", ctx=Load()),
-                                ctx=Load(),
-                            ),
-                            simple=1,
-                        )
-                    ],
+                    body=list(list(class_parse(k, v)) for k, v in json_value[0].items()),
                     decorator_list=[],
                 )
-        elif isinstance(v, (int, str)):
+                yield AnnAssign(
+                    target=Name(id=key, ctx=Store()),
+                    annotation=Subscript(
+                        value=Name(id="list", ctx=Load()),
+                        slice=Name(id=key.capitalize(), ctx=Load()),
+                        ctx=Load(),
+                    ),
+                    simple=1,
+                )
+            elif isinstance(json_value[0], list):
+                value, nest = detect(json_value[0])
+                if isinstance(value, dict):
+                    yield ast.ClassDef(
+                        name=key.capitalize(),
+                        bases=[Name(id="BaseModel", ctx=Load())],
+                        keywords=[],
+                        body=list(list(class_parse(k, v)) for k, v in value.items()),
+                        decorator_list=[],
+                    )
+                    yield AnnAssign(
+                        target=Name(id=key, ctx=Store()),
+                        annotation=nested_element(key, key.capitalize(), nest),
+                        simple=1,
+                    )
+                elif isinstance(value, list):
+                    yield AnnAssign(
+                        target=Name(id=key, ctx=Store()),
+                        annotation=nested_element(key, list.__name__, nest),
+                        simple=1,
+                    )
+
+                elif isinstance(value, (int, str)):
+                    yield AnnAssign(
+                        target=Name(id=key, ctx=Store()),
+                        annotation=nested_element(key, value.__class__.__name__, nest),
+                        simple=1,
+                    )
+
+            elif isinstance(json_value[0], (int, str)):
+                yield AnnAssign(
+                    target=Name(id=key, ctx=Store()),
+                    annotation=Subscript(
+                        value=Name(id="list", ctx=Load()),
+                        slice=Name(id=json_value[0].__class__.__name__, ctx=Load()),
+                        ctx=Load(),
+                    ),
+                    simple=1,
+                )
+        else:
             yield AnnAssign(
-                target=Name(id=k, ctx=Store()),
-                annotation=Name(id=v.__class__.__name__, ctx=Load()),
-                simple=1,
+                target=Name(id=key, ctx=Store()), annotation=Name(id="list", ctx=Load()), simple=1
             )
+
+    elif isinstance(json_value, (int, str)):
+        yield AnnAssign(
+            target=Name(id=key, ctx=Store()),
+            annotation=Name(id=json_value.__class__.__name__, ctx=Load()),
+            simple=1,
+        )
+
+
+def detect(value: JsonValue, nest: int = 0) -> Tuple[JsonValue, int]:
+    if not isinstance(value, list):
+        return value, nest
+    else:
+        if value:
+            return detect(value[0], nest + 1)
+        else:
+            return value, nest
+
+
+def nested_element(key: str, type_name: str, nest: int) -> Subscript:
+    if nest:
+        return Subscript(
+            value=Name(id="list", ctx=Load()),
+            slice=nested_element(key, type_name, nest - 1),
+            ctx=Load(),
+        )
+    else:
+        return Subscript(
+            value=Name(id="list", ctx=Load()),
+            slice=Name(id=type_name, ctx=Load()),
+            ctx=Load(),
+        )

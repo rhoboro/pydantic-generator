@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 
@@ -8,4 +9,6 @@ def test_json_parser():
 
         expected = []
         actual = parser.parse()
+        print(ast.dump(list(actual)[0]))
+        print(ast.unparse(list(actual)[0]))
         assert expected == actual
