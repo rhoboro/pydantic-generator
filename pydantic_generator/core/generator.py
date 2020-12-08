@@ -1,17 +1,20 @@
 import ast
-from enum import Enum
-from typing import Iterable
+from enum import Enum, auto
+from itertools import chain
+from typing import IO, Iterable, Union
 
 from .parser import JsonParser
 
 
 class Kind(Enum):
-    JSON = "json"
+    JSON = auto
 
 
 class ModelSchema:
-    def __init__(self, nodes: Iterable[ast.AST]):
-        self.tree = ast.Module(body=[], type_ignores=[])
+    def __init__(self, nodes: Iterable[ast.ClassDef]):
+        self.tree = ast.Module(
+            body=list(chain(self.collect_imports(nodes), nodes)), type_ignores=[]
+        )
 
     def to_string(self) -> str:
         return ast.unparse(ast.fix_missing_locations(self.tree))
@@ -24,10 +27,15 @@ class ModelSchema:
 
         raise RuntimeError("Not initialized")
 
+    def collect_imports(
+        self, nodes: Iterable[ast.ClassDef]
+    ) -> Iterable[Union[ast.Import, ast.ImportFrom]]:
+        return []
 
-def pydanticgen(reader, kind: Kind = Kind.JSON) -> ModelSchema:
+
+def pydanticgen(name: str, reader: IO, kind: Kind = Kind.JSON) -> ModelSchema:
     if kind == Kind.JSON:
-        parser = JsonParser(reader)
+        parser = JsonParser(name, reader)
     else:
         raise NotImplementedError(f"{kind} is not implemented yet.")
 
