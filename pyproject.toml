@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "pydantic-generator generates the pydantic model classes."
 authors = ["rhoboro <rhoboro@gmail.com>"]
 
+[tool.poetry.scripts]
+pydanticgen = "pydantic_generator.main:main"
+
 [tool.poetry.dependencies]
 python = "^3.7"
 pydantic = "^1.7.3"
