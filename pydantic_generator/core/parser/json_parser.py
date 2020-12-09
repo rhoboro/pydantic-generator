@@ -29,18 +29,6 @@ def class_parse(key: str, json_value: JsonValue) -> Iterator[Union[ClassDef, Ann
         yield from process_primitive(key, json_value)
 
 
-def get_first_and_nest_count(value: JsonValue, nest: int = 0) -> tuple[JsonValue, int]:
-    """リスト内の最初のリスト以外の値と入れ子の数を返す"""
-
-    if not isinstance(value, list):
-        return value, nest
-    else:
-        if value:
-            return get_first_and_nest_count(value[0], nest + 1)
-        else:
-            return value, nest
-
-
 def nested_element(key: str, type_name: str, nest: int) -> Subscript:
     """nestの数だけlist[]を付与したast.ASTを返す"""
     if nest:
