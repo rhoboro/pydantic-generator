@@ -30,7 +30,7 @@ class ModelSchema:
     def collect_imports(
         self, nodes: Iterable[ast.ClassDef]
     ) -> Iterable[Union[ast.Import, ast.ImportFrom]]:
-        return []
+        return [ast.ImportFrom(module="pydantic", names=[ast.alias(name="BaseModel")], level=0)]
 
 
 def pydanticgen(name: str, reader: IO, kind: Kind = Kind.JSON) -> ModelSchema:
