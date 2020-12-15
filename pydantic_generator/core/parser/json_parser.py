@@ -189,9 +189,15 @@ def process_list(
 
 
 def is_optional(lengths: list[list[int]], value: list) -> bool:
+    all_num = 1
     for x in lengths:
         if len(set(x)) != 1:
             return True
+        else:
+            all_num *= int(set(x).pop())
+
+    if all_num != len(value):
+        return True
 
     return None in value
 
