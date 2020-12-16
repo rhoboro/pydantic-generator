@@ -1,5 +1,6 @@
 import logging
 from enum import Enum, auto
+from pathlib import Path
 from typing import Optional
 
 from .core.generator import pydanticgen
@@ -16,8 +17,9 @@ class CLI:
     def run(self, input_: str, output: Optional[str]) -> ExitStatus:
         try:
             with open(input_) as reader:
-                model_schema = pydanticgen(reader)
-            output_name = output or model_schema.first_model_name
+                name = Path(input_).stem
+                model_schema = pydanticgen(name, reader)
+            output_name = output or f"{model_schema.first_model_name}.py"
 
             with open(output_name, "wt") as f:
                 f.write(model_schema.to_string())
