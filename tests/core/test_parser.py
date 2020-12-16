@@ -2,35 +2,55 @@ import ast
 import json
 from pathlib import Path
 
+import pytest
 
-def test_json_parser():
+PARAMS = [
+    ("data_01.json", "data_01.py"),
+]
+
+
+@pytest.mark.parametrize("json_file, expected_data", PARAMS)
+def test_json_parser(json_file, expected_data):
     from pydantic_generator.core.parser import JsonParser
-    with open(Path(__file__).parent.parent / 'data' / 'data_01.json') as reader:
-        parser = JsonParser("Response", reader)
 
-        expected = []
-        actual = parser.parse()
-        print(ast.unparse(list(actual)[0]))
+    with open(Path(__file__).parent.parent / "data" / json_file) as reader:
+        ast_ = list(JsonParser("Response", reader).parse())[0]
+        actual = ast.unparse(ast_)
+        print(actual)
+        expected = open(Path(__file__).parent.parent / "data" / expected_data).read()
         assert expected == actual
 
 
 def test_transform():
     from pydantic_generator.core.parser.json_parser import NLIJson
-    with open(Path(__file__).parent.parent / 'data' / 'data_01.json') as reader:
+
+    with open(Path(__file__).parent.parent / "data" / "data_01.json") as reader:
         target = json.load(reader)
         nli = NLIJson(target)
         expected = {
-            "__pyg_length_users": [2],
-            "users[]": {
-                "id": [1, 2],
-                "name": ["John Doe", "Bob"],
-                "signup_ts": ["2020-12-07T20:48:07.987261+09:00", "2020-12-07T20:48:07.987261+09:00"],
-                "friends[]": [2, 3, 4, 2, 3, 4, 5],
-                "xxx": {"yyy[3]": [1, 2, 3, 1, 2, 3], "zzz": {"a": [1, 3]}},
-                "__pyg_length_friends": [3, 4]
-            },
-            "hoge": {"ham[1][1][3]": {"egg": [None, 1, 2], "spam": [2, 2, 3], "piyo": [3]}},
+            "glossary": {
+                "title": ["example glossary"],
+                "GlossDiv": {
+                    "title": ["S"],
+                    "GlossList": {
+                        "GlossEntry": {
+                            "ID": ["SGML"],
+                            "SortAs": ["SGML"],
+                            "GlossTerm": ["Standard Generalized Markup Language"],
+                            "Acronym": ["SGML"],
+                            "Abbrev": ["ISO 8879:1986"],
+                            "GlossDef": {
+                                "para": [
+                                    "A meta-markup language, used to create markup languages such as DocBook."
+                                ],
+                                "__pyg_length_GlossSeeAlso[]": [2],
+                                "GlossSeeAlso[]": ["GML", "XML"],
+                            },
+                            "GlossSee": ["markup"],
+                        }
+                    },
+                },
+            }
         }
         print(nli.data)
         assert expected == nli.data
-        assert expected['users[2]']['xxx'] == nli['users[2]']['xxx']
