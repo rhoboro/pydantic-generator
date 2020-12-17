@@ -6,6 +6,10 @@ import pytest
 
 PARAMS = [
     ("data_01.json", "data_01.py"),
+    ("data_02.json", "data_02.py"),
+    ("data_03.json", "data_03.py"),
+    ("data_04.json", "data_04.py"),
+    ("data_05.json", "data_05.py"),
 ]
 
 
@@ -15,10 +19,11 @@ def test_json_parser(json_file, expected_data):
 
     with open(Path(__file__).parent.parent / "data" / json_file) as reader:
         ast_ = list(JsonParser("Response", reader).parse())[0]
-        actual = ast.unparse(ast_)
-        print(actual)
-        expected = open(Path(__file__).parent.parent / "data" / expected_data).read()
-        assert expected == actual
+
+    print(ast.dump(ast_))
+    actual = ast.unparse(ast_)
+    expected = open(Path(__file__).parent.parent / "data" / expected_data).read()
+    assert expected == actual
 
 
 def test_transform():

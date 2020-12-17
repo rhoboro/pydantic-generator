@@ -20,10 +20,11 @@ ALLOW_ANY = True
 
 
 class Any:
-    """ like typing.Any
+    """like typing.Any
 
     typing.Any は __name__ を持たないため代わりとなるクラスを用意
     """
+
     pass
 
 
