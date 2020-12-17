@@ -16,6 +16,15 @@ PrimitiveValue = Union[bool, int, float, str]
 JsonValue = Union[CollectionValue, PrimitiveValue]
 NestedDict = lambda: defaultdict(NestedDict)
 KEY_LENGTH = "__pyg_length"
+ALLOW_ANY = True
+
+
+class Any:
+    """ like typing.Any
+
+    typing.Any は __name__ を持たないため代わりとなるクラスを用意
+    """
+    pass
 
 
 class NLIJson(UserDict):
@@ -85,7 +94,7 @@ def class_parse(
         yield from list(process_dict(key, json_value, lengths))
     elif isinstance(json_value, list):
         yield from process_list(key, json_value, lengths)
-    elif isinstance(json_value, (bool, int, float, str)):
+    elif isinstance(json_value, (Any, bool, int, float, str)):
         yield from _process_primitive(key, json_value)
 
 
@@ -184,7 +193,7 @@ def process_list(
             yield from process_list(key, value_type, lengths)
         elif value_type == dict:
             yield from process_dict(key, value_type, lengths)
-        elif value_type in (bool, int, float, str):
+        elif value_type in (Any, bool, int, float, str):
             yield from _process_primitive(key, value_type, optional)
 
 
@@ -206,7 +215,11 @@ def get_data_type(key, value: list):
     if exclude_none := set([type(x) for x in value if x is not None]):
         if len(exclude_none) == 1:
             return exclude_none.pop()
-    raise ValueError(f"2つ以上の型がある: {key}, {value}")
+
+    if ALLOW_ANY:
+        return Any
+    else:
+        raise ValueError(f"2つ以上の型がある: {key}, {value}")
 
 
 def _process_primitive(
