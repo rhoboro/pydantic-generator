@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "pydantic-generator"
 version = "1.0.0"
+readme = "README.md"
 description = "pydantic-generator generates the pydantic model classes."
 authors = ["rhoboro <rhoboro@gmail.com>"]
 repository = "https://github.com/rhoboro/pydantic-generator"

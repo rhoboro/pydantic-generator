@@ -4,7 +4,7 @@ pydantic-generator generates a pydantic schema module from a json file.
 
 ## install
 
-pydantic-generates uses ast.unparse() and therefore only supports python 3.9+.
+pydantic-generates uses `ast.unparse()` and therefore only supports python 3.9+.
 
 ```shell
 $ python3.9 -m pip install pydantic-generator
@@ -46,6 +46,7 @@ $ cat response.json
   }
 }
 
+# this command generates Response.json
 $ pydanticgen -i response.json
 $ ls
 response.json Response.py
