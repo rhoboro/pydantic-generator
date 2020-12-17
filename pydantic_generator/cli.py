@@ -18,11 +18,11 @@ class CLI:
         try:
             with open(input_) as reader:
                 name = Path(input_).stem
-                model_schema = pydanticgen(name, reader)
-            output_name = output or f"{model_schema.first_model_name}.py"
+                module_node = pydanticgen(name, reader)
+            output_name = output or f"{module_node.first_class_name}.py"
 
             with open(output_name, "wt") as f:
-                f.write(model_schema.to_string())
+                f.write(module_node.unparse())
             return ExitStatus.OK
         except Exception as e:
             logger.exception(e)
