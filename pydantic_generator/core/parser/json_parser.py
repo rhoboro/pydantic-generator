@@ -71,7 +71,7 @@ class JsonParser(Parser):
         self.nli = NLIJson(json.load(reader))
 
     def parse(self) -> Iterable[ast.ClassDef]:
-        return list(class_parse(self.name, self.nli))
+        return list(class_parse(self.name, self.nli))[:-1]
 
 
 def class_parse(
@@ -103,7 +103,7 @@ def process_dict(
             new_length = value.get(f"{KEY_LENGTH}_{k}")
             if new_length:
                 new_lengths.append(new_length)
-            body.append(list(class_parse(k, v, new_lengths)))
+            body.extend(list(class_parse(k, v, new_lengths)))
         if m := MARKER_LIST.search(key):
             nests = int((len(m.group()) / 2)) - 1
             optional = is_optional_class(lengths, value)
