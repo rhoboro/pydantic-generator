@@ -46,7 +46,7 @@ $ cat response.json
   }
 }
 
-# this command generates Response.json
+# this command generates Response.py
 $ pydanticgen -i response.json
 $ ls
 response.json Response.py
